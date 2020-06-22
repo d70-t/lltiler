@@ -6,6 +6,18 @@ from PIL import Image
 def numTiles(z):
     return 2**z
 
+def resolution2zoom(res, lat=0., tilesize=256):
+    """
+    computes zoom level corresponsing to a given desired resolution
+    :param res: desired resolution in meters
+    :param lat: lowest absolute latitude value of desired scene
+    :param tilesize: size of one tile in pixels
+
+    :see: https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
+    """
+    zoom0_pixel_size = 40075016.686 / tilesize
+    return np.log2(zoom0_pixel_size * np.cos(np.deg2rad(lat)) / res)
+
 def latlon2relativeXY(lat, lon):
     x = (lon + 180) / 360
     y = (1 - np.log(np.tan(np.deg2rad(lat)) + 1./np.cos(np.deg2rad(lat))) / np.pi) / 2
@@ -25,9 +37,6 @@ def xy2latlon(x, y, z):
     lat = mercatorToLat(np.pi * (1 - 2 * rel_y))
     lon = -180.0 + 360.0 * x / n
     return lat, lon
-
-def size2level(size):
-    raise NotImplementedError("size2level is still missing")
 
 def render_tile(x, y, z, callback, tilesize=256):
     ys = ((np.arange(tilesize) + .5) / tilesize)[:, np.newaxis]
@@ -55,10 +64,8 @@ class LLTiler:
         if base_level is None:
             if size_hint is None:
                 raise ValueError("either base_level or size_hint must be given")
-            else:
-                self.base_level = size2level(size_hint)
-        else:
-            self.base_level = base_level
+        self.size_hint = size_hint
+        self.base_level = base_level
         
         self.naming_scheme = naming_scheme
 
@@ -76,6 +83,16 @@ class LLTiler:
             progress = lambda x, total: x
 
         (lat_min, lon_min), (lat_max, lon_max) = extent
+
+        if lat_min * lat_max < 0:
+            lat_abs_min = 0.
+        else:
+            lat_abs_min = min(abs(lat_min), abs(lat_max))
+
+        if self.base_level is None:
+            self.base_level = int(np.ceil(resolution2zoom(
+                self.size_hint, lat_abs_min)))
+
         x1, y1 = latlon2xy(lat_min, lon_min, self.base_level)
         x2, y2 = latlon2xy(lat_max, lon_max, self.base_level)
 
