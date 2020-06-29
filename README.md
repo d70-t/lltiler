@@ -30,12 +30,14 @@ def f(lat, lon):
     rel_lon = (lon - lon_min) / (lon_max - lon_min)
     valid = (rel_lat >= 0) & (rel_lat < 1) & (rel_lon >= 0) & (rel_lon < 1)
     colors = cmap(rel_lat, bytes=True)
-    colors[...,-1] = 255 * valid
+    colors[..., -1] = 255 * valid
     return colors
 
 t = LLTiler("temp_maps/gray", size_hint=1000.)
 t.render(((lat_min, lon_min), (lat_max, lon_max)), f, show_progress=True)
 ```
+
+Note that `show_progress=True` additionally requires the `tqdm` package.
 
 ### 2 (optional) combine multiple overlapping tiles
 If multiple tilesets have been generated using the first step and these tilesets should be combined to one tileset, the `overlay_tiles` utility can be used to paint multiple images on top of each other.
