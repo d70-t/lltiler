@@ -1,9 +1,7 @@
 import os
 from collections import defaultdict
 
-BASEDIR = os.path.abspath(os.path.dirname(__file__))
-PYRAMID_STEP = os.path.join(BASEDIR, "pyramid_step.py")
-OVERLAY_TILES = os.path.join(BASEDIR, "overlay_tiles.py")
+
 
 def find_tiles(tiledir):
     for xdir in os.listdir(tiledir):
@@ -36,8 +34,20 @@ def make_pyramides(basedir, level, tiles):
         print()
     make_pyramides(basedir, level-1, next_tiles)
 
-def _main():
+def _main(from_setuptools_script=True):
     import sys
+    if from_setuptools_script:
+        pyramid_step = "pyramid_step"
+        overlay_tiles = "overlay_tiles"
+    else:
+        script_base_dir = os.path.abspath(os.path.dirname(__file__))
+        pyramid_step = "\"{}\" \"{}\"".format(
+                sys.executable,
+                os.path.join(script_base_dir, "pyramid_step.py"))
+        overlay_tiles = "\"{}\" \"{}\"".format(
+                sys.executable,
+                os.path.join(script_base_dir, "overlay_tiles.py"))
+
     if len(sys.argv) < 4:
         print("usage: generate_tile_makefile.py <BASE_LEVEL> <BASEDIR> <OUTDIR>")
         exit(-1)
@@ -57,8 +67,8 @@ def _main():
     for x, y in layers_by_tile.keys():
         yvals_by_x[x].append(y)
 
-    print("PYRAMID_STEP=python3 \"{}\"".format(PYRAMID_STEP))
-    print("OVERLAY_TILES=python3 \"{}\"".format(OVERLAY_TILES))
+    print("PYRAMID_STEP={}".format(pyramid_step))
+    print("OVERLAY_TILES={}".format(overlay_tiles))
     print()
     print("all: " + os.path.join(outdir, "0", "0", "0.png"))
     print(".PHONY: all")
@@ -71,4 +81,4 @@ def _main():
 
 
 if __name__ == '__main__':
-    _main()
+    _main(False)
