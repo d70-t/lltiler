@@ -1,7 +1,6 @@
 import os
 from collections import defaultdict
 
-LEVEL = 9
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 PYRAMID_STEP = os.path.join(BASEDIR, "pyramid_step.py")
 OVERLAY_TILES = os.path.join(BASEDIR, "overlay_tiles.py")
@@ -39,20 +38,21 @@ def make_pyramides(basedir, level, tiles):
 
 def _main():
     import sys
-    if len(sys.argv) < 3:
-        print("usage: generate_tile_makefile.py <BASEDIR> <OUTDIR>")
+    if len(sys.argv) < 4:
+        print("usage: generate_tile_makefile.py <BASE_LEVEL> <BASEDIR> <OUTDIR>")
         exit(-1)
-    basedir = sys.argv[1]
-    outdir = sys.argv[2]
+    base_level = int(sys.argv[1])
+    basedir = sys.argv[2]
+    outdir = sys.argv[3]
     layers = sorted(os.listdir(basedir))
     layers_by_tile = defaultdict(list)
     for layer in layers:
-        for tile in find_tiles(os.path.join(basedir, layer, str(LEVEL))):
+        for tile in find_tiles(os.path.join(basedir, layer, str(base_level))):
             layers_by_tile[tile].append(layer)
     def outname(x, y):
-        return os.path.join(outdir, str(LEVEL), str(x), str(y)+".png")
+        return os.path.join(outdir, str(base_level), str(x), str(y)+".png")
     def inname(layer, x, y):
-        return os.path.join(basedir, layer, str(LEVEL), str(x), str(y)+".png")
+        return os.path.join(basedir, layer, str(base_level), str(x), str(y)+".png")
     yvals_by_x = defaultdict(list)
     for x, y in layers_by_tile.keys():
         yvals_by_x[x].append(y)
@@ -63,7 +63,7 @@ def _main():
     print("all: " + os.path.join(outdir, "0", "0", "0.png"))
     print(".PHONY: all")
     print()
-    make_pyramides(outdir, LEVEL, layers_by_tile.keys())
+    make_pyramides(outdir, base_level, layers_by_tile.keys())
     for (x, y), layers in sorted(layers_by_tile.items()):
         print(outname(x, y) + ": " + (" ".join(inname(layer, x, y) for layer in sorted(layers))))
         print("\t${OVERLAY_TILES} $@ $^")
