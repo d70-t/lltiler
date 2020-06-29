@@ -1,5 +1,5 @@
 from PIL import Image
-import numpy as np
+
 
 def overlay(images):
     if len(images) == 1:
@@ -8,6 +8,7 @@ def overlay(images):
     for image in images:
         new_image.paste(image, None, image)
     return new_image
+
 
 def _main():
     import os
@@ -18,10 +19,12 @@ def _main():
     if not os.path.exists(outdir):
         try:
             os.makedirs(outdir)
-        except OSError:  # catch race condition, if folder is created in between both calls
+        except OSError:
+            # catch race condition, if folder is created in between both calls
             pass
     new_im = overlay(list(map(Image.open, infiles)))
     new_im.save(outfile)
+
 
 if __name__ == '__main__':
     _main()

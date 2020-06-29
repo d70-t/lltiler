@@ -2,7 +2,6 @@ import os
 from collections import defaultdict
 
 
-
 def find_tiles(tiledir):
     for xdir in os.listdir(tiledir):
         try:
@@ -12,27 +11,33 @@ def find_tiles(tiledir):
         for filename in os.listdir(os.path.join(tiledir, xdir)):
             base, ext = os.path.splitext(filename)
             y = int(base)
-            yield (x,y)
+            yield (x, y)
+
 
 def make_pyramides(basedir, level, tiles):
     if level == 0:
         return
     tiles = set(tiles)
     next_tiles = set((int(x/2), int(y/2)) for x, y in tiles)
+
     def intile_name(x, y):
         if (x, y) in tiles:
-            return os.path.join(basedir, str(level), str(x), "%d.png"%y)
+            return os.path.join(basedir, str(level), str(x), "%d.png" % y)
         else:
             return "-"
+
     def outtile_name(x, y):
-        return os.path.join(basedir, str(level-1), str(x), "%d.png"%y)
+        return os.path.join(basedir, str(level-1), str(x), "%d.png" % y)
+
     for x, y in next_tiles:
-        innames = [intile_name(2*x+sx, 2*y+sy) for sx, sy in [(0,0), (0, 1), (1, 0), (1, 1)]]
+        innames = [intile_name(2*x+sx, 2*y+sy)
+                   for sx, sy in [(0, 0), (0, 1), (1, 0), (1, 1)]]
         indeps = [inname for inname in innames if inname != "-"]
         print(outtile_name(x, y) + ": " + (" ".join(indeps)))
         print("\t${PYRAMID_STEP} $@ " + (" ".join(innames)))
         print()
     make_pyramides(basedir, level-1, next_tiles)
+
 
 def _main(from_setuptools_script=True):
     import sys
@@ -48,21 +53,36 @@ def _main(from_setuptools_script=True):
                 sys.executable,
                 os.path.join(script_base_dir, "overlay_tiles.py"))
 
-    if len(sys.argv) < 4:
-        print("usage: generate_tile_makefile.py <BASE_LEVEL> <BASEDIR> <OUTDIR>")
-        exit(-1)
-    base_level = int(sys.argv[1])
-    basedir = sys.argv[2]
-    outdir = sys.argv[3]
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("base_level",
+                        type=int,
+                        help="level in which input tiles have been generated")
+    parser.add_argument("base_dir",
+                        type=str,
+                        help="folder containing input tiles")
+    parser.add_argument("out_dir",
+                        type=str,
+                        help="folder for generated output tiles")
+    args = parser.parse_args()
+
+    base_level = args.base_level
+    basedir = args.base_dir
+    outdir = args.out_dir
     layers = sorted(os.listdir(basedir))
     layers_by_tile = defaultdict(list)
     for layer in layers:
         for tile in find_tiles(os.path.join(basedir, layer, str(base_level))):
             layers_by_tile[tile].append(layer)
+
     def outname(x, y):
-        return os.path.join(outdir, str(base_level), str(x), str(y)+".png")
+        return os.path.join(outdir,
+                            str(base_level), str(x), str(y) + ".png")
+
     def inname(layer, x, y):
-        return os.path.join(basedir, layer, str(base_level), str(x), str(y)+".png")
+        return os.path.join(basedir, layer,
+                            str(base_level), str(x), str(y) + ".png")
+
     yvals_by_x = defaultdict(list)
     for x, y in layers_by_tile.keys():
         yvals_by_x[x].append(y)
@@ -75,7 +95,8 @@ def _main(from_setuptools_script=True):
     print()
     make_pyramides(outdir, base_level, layers_by_tile.keys())
     for (x, y), layers in sorted(layers_by_tile.items()):
-        print(outname(x, y) + ": " + (" ".join(inname(layer, x, y) for layer in sorted(layers))))
+        print(outname(x, y) + ": " + (" ".join(inname(layer, x, y)
+                                               for layer in sorted(layers))))
         print("\t${OVERLAY_TILES} $@ $^")
         print()
 

@@ -3,8 +3,10 @@ import itertools
 import numpy as np
 from PIL import Image
 
+
 def numTiles(z):
     return 2**z
+
 
 def resolution2zoom(res, lat=0., tilesize=256):
     """
@@ -13,23 +15,28 @@ def resolution2zoom(res, lat=0., tilesize=256):
     :param lat: lowest absolute latitude value of desired scene
     :param tilesize: size of one tile in pixels
 
-    :see: https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
+    :see: https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale # noqa: E501
     """
     zoom0_pixel_size = 40075016.686 / tilesize
     return np.log2(zoom0_pixel_size * np.cos(np.deg2rad(lat)) / res)
 
+
 def latlon2relativeXY(lat, lon):
     x = (lon + 180) / 360
-    y = (1 - np.log(np.tan(np.deg2rad(lat)) + 1./np.cos(np.deg2rad(lat))) / np.pi) / 2
+    rlat = np.deg2rad(lat)
+    y = (1 - np.log(np.tan(rlat) + 1./np.cos(rlat)) / np.pi) / 2
     return x, y
+
 
 def latlon2xy(lat, lon, z):
     n = numTiles(z)
     x, y = latlon2relativeXY(lat, lon)
     return n*x, n*y
 
+
 def mercatorToLat(mercatorY):
     return np.rad2deg(np.arctan(np.sinh(mercatorY)))
+
 
 def xy2latlon(x, y, z):
     n = numTiles(z)
@@ -38,12 +45,14 @@ def xy2latlon(x, y, z):
     lon = -180.0 + 360.0 * x / n
     return lat, lon
 
+
 def render_tile(x, y, z, callback, tilesize=256):
     ys = ((np.arange(tilesize) + .5) / tilesize)[:, np.newaxis]
     xs = ys.T
     xs, ys = np.broadcast_arrays(x + xs, y + ys)
     lat, lon = xy2latlon(xs, ys, z)
     return callback(lat, lon)
+
 
 class LLTiler:
     def __init__(self,
@@ -63,10 +72,11 @@ class LLTiler:
         self.data_folder = data_folder
         if base_level is None:
             if size_hint is None:
-                raise ValueError("either base_level or size_hint must be given")
+                raise ValueError(
+                        "either base_level or size_hint must be given")
         self.size_hint = size_hint
         self.base_level = base_level
-        
+
         self.naming_scheme = naming_scheme
 
     def render(self, extent, callback, show_progress=False):
@@ -80,7 +90,8 @@ class LLTiler:
             from tqdm import tqdm
             progress = tqdm
         else:
-            progress = lambda x, total: x
+            def progress(x, total):
+                return x
 
         (lat_min, lon_min), (lat_max, lon_max) = extent
 
