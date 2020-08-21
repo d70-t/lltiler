@@ -116,7 +116,8 @@ class LLTiler:
                                                range(y_min, y_max + 1)),
                              total=(x_max - x_min + 1) * (y_max - y_min + 1)):
             tile = render_tile(x, y, self.base_level, callback)
-            self.store_tile(tile, x, y, self.base_level)
+            if np.any(tile[..., -1] != 0):  # check if all transparent
+                self.store_tile(tile, x, y, self.base_level)
 
     def tile_path(self, x, y, z):
         return os.path.join(self.data_folder,
