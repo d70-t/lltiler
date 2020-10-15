@@ -1,11 +1,12 @@
 import setuptools
+import versioneer
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="lltiler",
-    version="0.0.1",
+    version=versioneer.get_version(),
     author="Tobias Kölling",
     author_email="tobias.koelling@physik.uni-muenchen.de",
     description=(
@@ -34,4 +35,5 @@ setuptools.setup(
                            "generate_tile_makefile"]
         ],
     },
+    cmdclass=versioneer.get_cmdclass(),
 )
