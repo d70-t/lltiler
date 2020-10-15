@@ -54,6 +54,43 @@ def render_tile(x, y, z, callback, tilesize=256):
     return callback(lat, lon)
 
 
+class TileSelector:
+    pass
+
+
+class AllTileSelector(TileSelector):
+    """
+    Selects all tiles
+    """
+    def len(self, total):
+        return total
+
+    def select(self, tilegen):
+        return tilegen
+
+
+class ChunkTileSelector(TileSelector):
+    def __init__(self, num_chunks, chunk):
+        """
+        Selects tiles based on chunks.
+
+        All tiles are split into `num_chunk` approximately equally sized chunks
+        but only the tiles belonging to chunk no `chunk` are selected.
+        """
+        self.num_chunks = num_chunks
+        self.chunk = chunk
+
+    def len(self, total):
+        rem = total % self.num_chunks
+        sub = total // self.num_chunks
+        if self.chunk < rem:
+            sub += 1
+        return sub
+
+    def select(self, tilegen):
+        return itertools.islice(tilegen, self.chunk, None, self.num_chunks)
+
+
 class LLTiler:
     def __init__(self,
                  data_folder,
@@ -79,7 +116,7 @@ class LLTiler:
 
         self.naming_scheme = naming_scheme
 
-    def render(self, extent, callback, show_progress=False):
+    def render(self, extent, callback, show_progress=False, selector=AllTileSelector()):
         """
         :param extent: ((lat_min, lon_min), (lat_max, lon_max))
         :param callback: function accepting lat and a lon array
@@ -112,9 +149,11 @@ class LLTiler:
         y_min = int(min(y1, y2))
         y_max = int(max(y1, y2))
 
-        for x, y in progress(itertools.product(range(x_min, x_max + 1),
-                                               range(y_min, y_max + 1)),
-                             total=(x_max - x_min + 1) * (y_max - y_min + 1)):
+        total = selector.len((x_max - x_min + 1) * (y_max - y_min + 1))
+
+        for x, y in progress(selector.select(
+                itertools.product(range(x_min, x_max + 1), range(y_min, y_max + 1))),
+                total=total):
             tile = render_tile(x, y, self.base_level, callback)
             if np.any(tile[..., -1] != 0):  # check if all transparent
                 self.store_tile(tile, x, y, self.base_level)

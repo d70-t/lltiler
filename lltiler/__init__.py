@@ -1,3 +1,3 @@
-from .lltiler import LLTiler
+from .lltiler import LLTiler, AllTileSelector, ChunkTileSelector
 
-__all__ = ['LLTiler']
+__all__ = ['LLTiler', 'AllTileSelector', 'ChunkTileSelector']
