@@ -126,7 +126,6 @@ class LLTiler:
     def store_tile(self, tile, x, y, z):
         filename = self.tile_path(x, y, z)
         folder = os.path.dirname(filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
+        os.makedirs(folder, exist_ok=True)
         image = Image.fromarray(tile)
         image.save(filename)
